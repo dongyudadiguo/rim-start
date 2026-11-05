@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>欢迎使用 · 无边框浏览器</title>
+<!--
+  单文件演示站 · 部署到 Cloudflare Pages 即可
+  约束：页面顶部 46px 内不放任何交互元素（被浏览器热区接管）
+  所有 SVG 动画均为 CSS 驱动，尊重 prefers-reduced-motion
+-->
+<style>
+:root{
+  --bg:#0a0d12;
+  --surface:rgba(255,255,255,.028);
+  --surface-2:rgba(255,255,255,.05);
+  --line:rgba(255,255,255,.075);
+  --line-strong:rgba(255,255,255,.12);
+  --text:#e7eaf1;
+  --muted:#8b94a8;
+  --dim:#5d6679;
+  --accent:#4f8cff;
+  --green:#6ee7a8;
+  --amber:#fbbf24;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  background:var(--bg);color:var(--text);
+  font-family:-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+  -webkit-font-smoothing:antialiased;line-height:1.65;
+  padding-top:46px;min-height:100vh;
+}
+
+/* ============ 顶部热区提示条 ============ */
+#hotbar{
+  position:fixed;top:0;left:0;right:0;height:46px;z-index:100;
+  display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(180deg,rgba(79,140,255,.055),rgba(79,140,255,.02));
+  border-bottom:1px solid rgba(79,140,255,.16);
+  color:rgba(160,180,215,.55);font-size:12px;letter-spacing:.3px;
+  transition:background .18s ease,color .18s ease,border-color .18s ease;
+  pointer-events:none;user-select:none;
+}
+#hotbar .dot{
+  width:5px;height:5px;border-radius:50%;
+  background:rgba(120,150,200,.5);margin-right:8px;
+  transition:background .18s ease,box-shadow .18s ease;
+}
+#hotbar.hot{
+  background:linear-gradient(180deg,rgba(79,140,255,.17),rgba(79,140,255,.07));
+  border-bottom-color:rgba(79,140,255,.55);color:#cfe0ff;
+}
+#hotbar.hot .dot{background:var(--green);box-shadow:0 0 0 4px rgba(110,231,168,.16)}
+#hotbar .hint{display:none}
+#hotbar.hot .idle{display:none}
+#hotbar.hot .hint{display:inline}
+
+/* ============ 布局 ============ */
+.wrap{max-width:880px;margin:0 auto;padding:0 24px}
+section{padding:44px 0}
+section + section{border-top:1px solid var(--line)}
+
+.hero{padding:56px 0 40px}
+.eyebrow{
+  display:inline-flex;align-items:center;gap:7px;
+  font-size:12px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;
+  color:var(--accent);padding:4px 11px;border-radius:99px;
+  border:1px solid rgba(79,140,255,.3);background:rgba(79,140,255,.08);
+  margin-bottom:20px;
+}
+.eyebrow::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--accent)}
+h1{font-size:34px;line-height:1.25;font-weight:700;letter-spacing:-.6px;margin-bottom:14px}
+h1 em{font-style:normal;color:var(--accent)}
+.lede{font-size:15.5px;color:var(--muted);max-width:620px}
+
+h2{
+  font-size:19px;font-weight:650;letter-spacing:-.2px;
+  margin-bottom:6px;display:flex;align-items:center;gap:10px;
+}
+h2 .num{
+  flex:none;width:22px;height:22px;border-radius:7px;
+  background:rgba(79,140,255,.14);color:var(--accent);
+  font-size:12px;font-weight:700;display:grid;place-items:center;
+  font-family:var(--mono);
+}
+.sub{font-size:14px;color:var(--muted);margin-bottom:22px}
+
+/* ============ 大动画容器 ============ */
+.flow{
+  background:linear-gradient(140deg,rgba(79,140,255,.055),rgba(255,255,255,.015));
+  border:1px solid rgba(79,140,255,.18);
+  border-radius:18px;padding:18px;
+  margin-top:6px;
+}
+.flow svg{display:block;width:100%;height:auto}
+.flow-cap{
+  display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
+  margin-top:14px;padding:0 6px;
+  font-size:12.5px;color:var(--dim);font-family:var(--mono);
+}
+.flow-cap b{color:var(--muted);font-weight:600;font-family:-apple-system,"Segoe UI","PingFang SC",sans-serif}
+
+/* ============ 卡片网格 ============ */
+.grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(256px,1fr));
+  gap:14px;
+}
+.card{
+  background:var(--surface);border:1px solid var(--line);
+  border-radius:14px;overflow:hidden;
+  transition:background .15s ease,border-color .15s ease;
+}
+.card:hover{background:var(--surface-2);border-color:var(--line-strong)}
+.card .anim{
+  background:rgba(0,0,0,.22);
+  border-bottom:1px solid var(--line);
+  padding:0;overflow:hidden;
+}
+.card .anim svg{display:block;width:100%;height:auto}
+.card .body{padding:13px 15px 15px}
+.card .body .keys{
+  display:flex;align-items:center;gap:5px;flex-wrap:wrap;
+  margin-bottom:7px;min-height:24px;
+}
+.card .body .desc{font-size:13px;color:var(--muted);line-height:1.55}
+.card .body .desc b{color:#dbe1ee;font-weight:600}
+
+.card.danger{border-color:rgba(251,191,36,.22)}
+.card.danger .body .desc b{color:var(--amber)}
+
+kbd{
+  display:inline-block;font-family:var(--mono);font-size:12px;font-weight:500;
+  padding:3px 8px;border-radius:6px;
+  background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.13);
+  border-bottom-width:2px;color:#d3dae8;white-space:nowrap;line-height:1.3;
+}
+kbd.warn{background:rgba(251,191,36,.13);border-color:rgba(251,191,36,.32);color:#ffd978}
+.plus{color:var(--dim);font-size:11px;margin:0 1px}
+.word{font-size:12px;color:var(--dim);padding:0 3px}
+
+/* ============ 有序步骤 ============ */
+.steps{counter-reset:s;display:flex;flex-direction:column;gap:12px}
+.step{
+  counter-increment:s;display:flex;gap:14px;align-items:flex-start;
+  background:var(--surface);border:1px solid var(--line);
+  border-radius:12px;padding:14px 17px;
+}
+.step::before{
+  content:counter(s);flex:none;width:21px;height:21px;border-radius:50%;
+  background:rgba(110,231,168,.13);color:var(--green);
+  font-size:11.5px;font-weight:700;font-family:var(--mono);
+  display:grid;place-items:center;margin-top:2px;
+}
+.step .body{font-size:13.5px;color:var(--muted)}
+.step .body b{color:#dbe1ee;font-weight:600}
+.step .body kbd{margin:0 1px}
+
+/* ============ 取舍说明 ============ */
+.notes{display:flex;flex-direction:column;gap:10px}
+.note{
+  display:flex;gap:12px;align-items:flex-start;
+  font-size:13.5px;color:var(--muted);
+  padding:13px 16px;border-radius:11px;
+  background:rgba(255,255,255,.018);
+  border-left:2px solid rgba(255,255,255,.1);
+}
+.note .mark{flex:none;color:var(--dim);font-family:var(--mono);font-size:13px;margin-top:1px}
+.note b{color:#cfd6e4;font-weight:600}
+
+footer{
+  padding:36px 0 60px;font-size:12.5px;color:var(--dim);
+  display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
+}
+footer kbd{font-size:11px}
+
+/* ============ 通用 SVG 元素 ============ */
+.win-bg{fill:#0e121a}
+.win-frame{fill:none;stroke:#2a3345;stroke-width:1.4}
+.win-content{fill:#0d1119}
+.hot-bar{fill:#4f8cff;opacity:.08}
+.cursor{fill:#f2f5fb;stroke:#0a0d12;stroke-width:.6}
+.kbd-box{fill:#1a2030;stroke:#3a4a65;stroke-width:1}
+.kbd-text{fill:#a9b4c8;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10px;text-anchor:middle;dominant-baseline:central}
+.search-box{fill:#1a2030;stroke:#3a4a65;stroke-width:1}
+.search-text{fill:#e7eaf1;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px}
+.muted-text{fill:#5d6679;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:9px}
+
+/* ================================================================
+   大动画：顶部打字完整流程（周期 6s）
+   ================================================================ */
+.fmouse{animation:fMouse 6s infinite}
+@keyframes fMouse{
+  0%   {transform:translate(420px,265px);opacity:0}
+  8%   {transform:translate(420px,265px);opacity:1}
+  24%  {transform:translate(330px,88px)}
+  90%  {transform:translate(330px,88px);opacity:1}
+  100% {transform:translate(330px,88px);opacity:0}
+}
+.fhot{animation:fHot 6s infinite}
+@keyframes fHot{
+  0%,20%   {opacity:.08}
+  26%,88%  {opacity:.38}
+  94%,100% {opacity:.08}
+}
+.fsearch{animation:fSearch 6s infinite;transform-origin:320px 86px}
+@keyframes fSearch{
+  0%,28%   {opacity:0;transform:translateY(-14px) scale(.96)}
+  34%,82%  {opacity:1;transform:translateY(0) scale(1)}
+  88%,100% {opacity:0;transform:translateY(-14px) scale(.96)}
+}
+.ftype{opacity:0}
+.ft1{animation:ft1 6s infinite}
+@keyframes ft1{0%,38%{opacity:0} 39%,100%{opacity:1}}
+.ft2{animation:ft2 6s infinite}
+@keyframes ft2{0%,44%{opacity:0} 45%,100%{opacity:1}}
+.ft3{animation:ft3 6s infinite}
+@keyframes ft3{0%,50%{opacity:0} 51%,100%{opacity:1}}
+.ft4{animation:ft4 6s infinite}
+@keyframes ft4{0%,56%{opacity:0} 57%,100%{opacity:1}}
+.ft5{animation:ft5 6s infinite}
+@keyframes ft5{0%,62%{opacity:0} 63%,100%{opacity:1}}
+.ft6{animation:ft6 6s infinite}
+@keyframes ft6{0%,68%{opacity:0} 69%,100%{opacity:1}}
+
+.fmatch{animation:fMatch 6s infinite}
+@keyframes fMatch{
+  0%,58%   {opacity:0;transform:translateY(-4px)}
+  64%,82%  {opacity:1;transform:translateY(0)}
+  88%,100% {opacity:0;transform:translateY(-4px)}
+}
+.fenter-badge{animation:fEnterBadge 6s infinite}
+@keyframes fEnterBadge{
+  0%,68%   {opacity:0;transform:scale(.9)}
+  74%,82%  {opacity:1;transform:scale(1)}
+  86%,100% {opacity:0;transform:scale(.9)}
+}
+.fcontent-old{animation:fOld 6s infinite}
+@keyframes fOld{
+  0%,78%   {opacity:1}
+  84%,100% {opacity:0}
+}
+.fcontent-new{animation:fNew 6s infinite}
+@keyframes fNew{
+  0%,82%   {opacity:0;transform:scale(.97)}
+  90%,100% {opacity:1;transform:scale(1)}
+}
+.fcontent-new{transform-origin:320px 200px}
+
+/* ================================================================
+   卡片动画 1：顶部打字 → 搜索框（周期 4s）
+   ================================================================ */
+.c1-mouse{animation:c1Mouse 4s infinite}
+@keyframes c1Mouse{
+  0%   {transform:translate(210px,100px);opacity:0}
+  10%  {opacity:1}
+  35%  {transform:translate(140px,45px)}
+  90%  {transform:translate(140px,45px);opacity:1}
+  100% {opacity:0}
+}
+.c1-hot{animation:c1Hot 4s infinite}
+@keyframes c1Hot{
+  0%,28%{opacity:.08}
+  38%,90%{opacity:.42}
+  100%{opacity:.08}
+}
+.c1-search{animation:c1Search 4s infinite;transform-origin:140px 44px}
+@keyframes c1Search{
+  0%,32%{opacity:0;transform:translateY(-8px) scale(.94)}
+  42%,88%{opacity:1;transform:translateY(0) scale(1)}
+  100%{opacity:0;transform:translateY(-8px) scale(.94)}
+}
+
+/* ================================================================
+   卡片动画 2：` 打开标签列表（周期 4s）
+   ================================================================ */
+.c2-key{animation:c2Key 4s infinite}
+@keyframes c2Key{
+  0%,20%  {transform:translateY(0)}
+  28%     {transform:translateY(2px)}
+  36%,100%{transform:translateY(0)}
+}
+.c2-list{animation:c2List 4s infinite;transform-origin:140px 40px}
+@keyframes c2List{
+  0%,32%   {opacity:0;transform:translateY(-10px)}
+  44%,86%  {opacity:1;transform:translateY(0)}
+  94%,100% {opacity:0;transform:translateY(-10px)}
+}
+.c2-row1{animation:c2Row1 4s infinite}
+@keyframes c2Row1{
+  0%,46%   {fill:#1a2030}
+  54%,64%  {fill:#2c4a80}
+  72%,100% {fill:#1a2030}
+}
+.c2-row2{animation:c2Row2 4s infinite}
+@keyframes c2Row2{
+  0%,56%   {fill:#1a2030}
+  64%,74%  {fill:#2c4a80}
+  82%,100% {fill:#1a2030}
+}
+
+/* ================================================================
+   卡片动画 3：Alt+← 后退（周期 4s）
+   ================================================================ */
+.c3-old{animation:c3Old 4s infinite}
+@keyframes c3Old{
+  0%,20%   {transform:translateX(0);opacity:1}
+  42%      {transform:translateX(-60px);opacity:0}
+  43%,100% {transform:translateX(-60px);opacity:0}
+}
+.c3-old{transform-origin:center}
+.c3-new{animation:c3New 4s infinite}
+@keyframes c3New{
+  0%,30%   {transform:translateX(-60px);opacity:0}
+  52%,88%  {transform:translateX(0);opacity:1}
+  96%,100% {transform:translateX(-60px);opacity:0}
+}
+.c3-arrow{animation:c3Arrow 4s infinite}
+@keyframes c3Arrow{
+  0%,18%  {opacity:0;transform:translateX(6px)}
+  28%,40% {opacity:1;transform:translateX(-4px)}
+  52%,100%{opacity:0;transform:translateX(-4px)}
+}
+
+/* ================================================================
+   卡片动画 4：顶部双击最大化（周期 4s）
+   ================================================================ */
+.c4-win{animation:c4Win 4s infinite;transform-origin:center}
+@keyframes c4Win{
+  0%,30%   {transform:scale(1);transform-origin:140px 65px}
+  52%,88%  {transform:scale(1.28);transform-origin:140px 65px}
+  96%,100% {transform:scale(1);transform-origin:140px 65px}
+}
+.c4-pulse{animation:c4Pulse 4s infinite}
+@keyframes c4Pulse{
+  0%,14%  {opacity:0;r:0}
+  20%     {opacity:.9;r:6}
+  30%,100%{opacity:0;r:14}
+}
+.c4-pulse2{animation:c4Pulse2 4s infinite}
+@keyframes c4Pulse2{
+  0%,22%  {opacity:0;r:0}
+  28%     {opacity:.9;r:6}
+  38%,100%{opacity:0;r:14}
+}
+
+/* ================================================================
+   卡片动画 5：顶部拖动移动窗口（周期 4s）
+   ================================================================ */
+.c5-win{animation:c5Win 4s infinite}
+@keyframes c5Win{
+  0%,20%   {transform:translate(0,0)}
+  46%,62%  {transform:translate(28px,12px)}
+  88%,100% {transform:translate(0,0)}
+}
+.c5-mouse{animation:c5Mouse 4s infinite}
+@keyframes c5Mouse{
+  0%,18%   {transform:translate(140px,46px);opacity:0}
+  24%      {opacity:1}
+  46%,62%  {transform:translate(168px,58px)}
+  72%      {opacity:1}
+  82%,100% {transform:translate(168px,58px);opacity:0}
+}
+.c5-path{animation:c5Path 4s infinite}
+@keyframes c5Path{
+  0%,20%  {stroke-dashoffset:0;opacity:0}
+  24%     {opacity:.5}
+  46%,62% {stroke-dashoffset:-40;opacity:.5}
+  72%,100%{opacity:0}
+}
+
+/* ================================================================
+   卡片动画 6：中键最小化（周期 4s）
+   ================================================================ */
+.c6-win{animation:c6Win 4s infinite;transform-origin:140px 65px}
+@keyframes c6Win{
+  0%,30%   {transform:scale(1) translateY(0);opacity:1}
+  48%,88%  {transform:scale(.3) translateY(60px);opacity:.35}
+  96%,100% {transform:scale(1) translateY(0);opacity:1}
+}
+.c6-taskbar{opacity:.6}
+
+/* ================================================================
+   卡片动画 7：Shift+中键退出（周期 4s）
+   ================================================================ */
+.c7-win{animation:c7Win 4s infinite;transform-origin:140px 65px}
+@keyframes c7Win{
+  0%,28%   {transform:scale(1);opacity:1}
+  50%,60%  {transform:scale(.9);opacity:.9}
+  74%,100% {transform:scale(.6);opacity:0}
+}
+.c7-x{animation:c7X 4s infinite}
+@keyframes c7X{
+  0%,60%   {opacity:0;transform:scale(.4);transform-origin:140px 65px}
+  70%,76%  {opacity:1;transform:scale(1)}
+  84%,100% {opacity:0;transform:scale(1.4)}
+}
+
+/* ================================================================
+   卡片动画 8：Ctrl+` 全局唤起（周期 4s）
+   ================================================================ */
+.c8-win{animation:c8Win 4s infinite;transform-origin:140px 65px}
+@keyframes c8Win{
+  0%,26%   {transform:scale(.4) translateY(40px);opacity:0}
+  46%,88%  {transform:scale(1) translateY(0);opacity:1}
+  96%,100% {transform:scale(.4) translateY(40px);opacity:0}
+}
+.c8-taskbar{opacity:.6}
+
+/* ================================================================
+   卡片动画 9：F5 刷新（周期 4s）
+   ================================================================ */
+.c9-content{animation:c9Content 4s infinite}
+@keyframes c9Content{
+  0%,18%   {opacity:1}
+  30%,42%  {opacity:0}
+  54%,100% {opacity:1}
+}
+.c9-spin{animation:c9Spin 4s infinite;transform-origin:140px 65px}
+@keyframes c9Spin{
+  0%,18%   {opacity:0;transform:rotate(0deg)}
+  26%      {opacity:1;transform:rotate(90deg)}
+  44%      {opacity:1;transform:rotate(270deg)}
+  52%,100% {opacity:0;transform:rotate(360deg)}
+}
+
+/* ================================================================
+   卡片动画 10：Ctrl+Shift+I 开发者工具（周期 4s）
+   ================================================================ */
+.c10-devtools{animation:c10Dt 4s infinite}
+@keyframes c10Dt{
+  0%,24%   {opacity:0;transform:translateX(100%)}
+  42%,88%  {opacity:1;transform:translateX(0)}
+  96%,100% {opacity:0;transform:translateX(100%)}
+}
+.c10-devtools{transform-origin:center}
+
+/* 无障碍：尊重用户偏好 */
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important}
+}
+
+@media (max-width:640px){
+  h1{font-size:26px}
+  section{padding:34px 0}
+  .hero{padding:40px 0 30px}
+  .wrap{padding:0 18px}
+  #hotbar{font-size:11px}
+  .grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<div id="hotbar">
+  <span class="dot"></span>
+  <span class="idle">把鼠标移到窗口最上方，可直接开始搜索</span>
+  <span class="hint">已就绪 · 现在直接打字</span>
+</div>
+
+<div class="wrap">
+
+  <!-- ============ Hero ============ -->
+  <section class="hero">
+    <div class="eyebrow">欢迎使用</div>
+    <h1>这是一个<em>没有地址栏</em>的浏览器</h1>
+    <p class="lede">
+      没有标签栏、没有工具栏、没有按钮。所有导航都通过一条藏在窗口顶部的输入通道完成。
+      下面每一个交互都会自动播放演示，看一遍就懂。
+    </p>
+  </section>
+
+  <!-- ============ 大动画：顶部打字完整流程 ============ -->
+  <section>
+    <h2><span class="num">1</span>唯一需要记住的事</h2>
+    <p class="sub">鼠标移到窗口最上方 46 像素，然后直接打字。</p>
+
+    <div class="flow">
+      <svg viewBox="0 0 640 340" aria-label="演示：鼠标移到顶部、打字、回车打开页面">
+        <defs>
+          <clipPath id="fwin-clip">
+            <rect x="80" y="60" width="480" height="220" rx="12"/>
+          </clipPath>
+          <clipPath id="fmatch-clip">
+            <rect x="200" y="108" width="240" height="34" rx="8"/>
+          </clipPath>
+        </defs>
+
+        <!-- 窗口主体 -->
+        <g clip-path="url(#fwin-clip)">
+          <rect class="win-bg" x="80" y="60" width="480" height="220"/>
+          <rect class="hot-bar fhot" x="80" y="60" width="480" height="44"/>
+          <rect class="win-content" x="80" y="104" width="480" height="176"/>
+
+          <!-- 网页内容（旧） -->
+          <g class="fcontent-old">
+            <rect x="120" y="150" width="380" height="14" rx="3" fill="#1a2030"/>
+            <rect x="120" y="180" width="320" height="9" rx="2" fill="#161b28"/>
+            <rect x="120" y="200" width="360" height="9" rx="2" fill="#161b28"/>
+            <rect x="120" y="220" width="240" height="9" rx="2" fill="#161b28"/>
+            <rect x="120" y="245" width="380" height="9" rx="2" fill="#161b28"/>
+            <rect x="120" y="265" width="200" height="9" rx="2" fill="#161b28"/>
+          </g>
+
+          <!-- 网页内容（新，加载后） -->
+          <g class="fcontent-new" opacity="0">
+            <circle cx="320" cy="170" r="22" fill="#e7eaf1"/>
+            <path d="M312 170c0-5 3-8 8-8s8 3 8 8v3c0 2-1 4-3 5v3h-10v-3c-2-1-3-3-3-5z" fill="#0d1119"/>
+            <rect x="200" y="210" width="240" height="12" rx="3" fill="#1a2030"/>
+            <rect x="240" y="232" width="160" height="8" rx="2" fill="#161b28"/>
+            <rect x="220" y="250" width="200" height="8" rx="2" fill="#161b28"/>
+            <rect x="260" y="272" width="120" height="8" rx="2" fill="#161b28"/>
+          </g>
+        </g>
+        <rect class="win-frame" x="80" y="60" width="480" height="220" rx="12"/>
+
+        <!-- 46px 标注 -->
+        <text x="100" y="88" class="muted-text" fill="#7d8798" opacity=".7">46px</text>
+
+        <!-- 搜索框 -->
+        <g class="fsearch" opacity="0">
+          <rect class="search-box" x="200" y="68" width="240" height="30" rx="15"/>
+          <circle cx="220" cy="83" r="6" fill="none" stroke="#5f6b82" stroke-width="1.5"/>
+          <line x1="224.5" y1="87.5" x2="229" y2="92" stroke="#5f6b82" stroke-width="1.5" stroke-linecap="round"/>
+          <text x="240" y="88" class="search-text">
+            <tspan class="ftype ft1">g</tspan><tspan class="ftype ft2">i</tspan><tspan class="ftype ft3">t</tspan><tspan class="ftype ft4">h</tspan><tspan class="ftype ft5">u</tspan><tspan class="ftype ft6">b</tspan>
+          </text>
+        </g>
+
+        <!-- 匹配项下拉 -->
+        <g class="fmatch" opacity="0">
+          <rect x="200" y="108" width="240" height="34" rx="8" fill="#1a2030" stroke="#3a4a65" stroke-width="1"/>
+          <circle cx="220" cy="125" r="7" fill="#242b3d"/>
+          <text x="220" y="128" text-anchor="middle" font-family="ui-monospace,monospace" font-size="8" fill="#8b94a8">GH</text>
+          <text x="236" y="129" font-family="-apple-system,'Segoe UI',sans-serif" font-size="11" fill="#e7eaf1">github.com</text>
+        </g>
+
+        <!-- Enter 提示 -->
+        <g class="fenter-badge" opacity="0">
+          <rect x="285" y="290" width="70" height="22" rx="5" fill="#1a2030" stroke="#4f8cff" stroke-width="1.2"/>
+          <text x="320" y="301" class="kbd-text" fill="#8fb8ff">Enter</text>
+        </g>
+
+        <!-- 鼠标 -->
+        <g class="fmouse" opacity="0">
+          <polygon class="cursor" points="0,0 0,15 4,11 6,17 8,16 6,10 11,10"/>
+        </g>
+      </svg>
+
+      <div class="flow-cap">
+        <span><b>把光标推到顶部</b> → 热区亮起 → 直接打字</span>
+        <span>回车打开匹配项</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 快捷键一览 ============ -->
+  <section>
+    <h2><span class="num">2</span>全部操作一览</h2>
+    <p class="sub">没有按钮。下面每一个都是完整交互的动画演示。</p>
+
+    <div class="grid">
+
+      <!-- 1. 顶部 + 字符 -->
+      <div class="card">
+        <div class="anim">
+          <svg viewBox="0 0 280 120">
+            <defs>
+              <clipPath id="c1-clip"><rect x="30" y="25" width="220" height="80" rx="5"/></clipPath>
+            </defs>
+            <g clip-path="url(#c1-clip)">
+              <rect class="win-bg" x="30" y="25" width="220" height="80"/>
+              <rect class="hot-bar c1-hot" x="30" y="25" width="220" height="18"/>
+              <rect class="win-content" x="30" y="43" width="220" height="62"/>
+              <rect x="45" y="55" width="180" height="6" rx="1.5" fill="#1a2030"/>
+              <rect x="45" y="68" width="140" height="5" rx="1.5" fill="#161b28"/>
+              <rect x="45" y="80" width="160" height="5" rx="1.5" fill="#161b28"/>
+              <rect x="45" y="92" width="100" height="5" rx="1.5" fill="#161b28"/>
+            </g>
+            <rect class="win-frame" x="30" y="25" width="220" height="80" rx="5"/>
+
+            <g class="c1-search" opacity="0">
+              <rect class="search-box" x="60" y="30" width="160" height="22" rx="11"/>
+              <circle cx="75" cy="41" r="4.5" fill="none" stroke="#5f6b82" stroke-width="1.3"/>
+              <line x1="78.5" y1="44.5" x2="82" y2="48" stroke="#5f6b82" stroke-width="1.3" stroke-linecap="round"/>
+              <text x="90" y="45" font-family="ui-monospace,monospace" font-size="9.5" fill="#e7eaf1">g</text>
+            </g>
+
+            <g class="c1-mouse" opacity="0">
+              <polygon class="cursor" points="0,0 0,13 3.5,9.5 5.5,14.5 7,14 5,9 9.5,9"/>
+            </g>
+          </svg>
+        </div>
+        <div class="body">
+          <div class="keys"><kbd>顶部</kbd><span class="word">+</span><kbd>任意字符</kbd></div>
+          <div class="desc"><b>打开搜索框</b>，第一个字符自动填入</div>
+        </div>
+      </div>
+
+      <!-- 2. ` 标签列表 -->
+      <div class="card">
+        <div class="anim">
+          <svg viewBox="0 0 280 120">
+            <g class="c2-key">
+              <rect class="kbd-box" x="125" y="6" width="30" height="22" rx="4"/>
+              <text x="140" y="18" class="kbd-text" font-size="12">`</text>
+            </g>
+            <g class="c2-list" opacity="0">
+              <rect x="40" y="40" width="200" height="70" rx="8" fill="#131820" stroke="#2a3345" stroke-width="1"/>
+              <rect class="c2-row1" x="46" y="46" width="188" height="16" rx="4"/>
+              <circle cx="56" cy="54" r="4" fill="#4f8cff"/>
+              <rect x="66" y="51" width="90" height="5" rx="1.5" fill="#3a4a65"/>
+              <rect class="c2-row2" x="46" y="66" width="188" height="16" rx="4"/>
+              <circle cx="56" cy="74" r="4" fill="#2a3345"/>
+              <rect x="66" y="71" width="70" height="5" rx="1.5" fill="#2a3345"/>
+              <rect x="46" y="86" width="188" height="16" rx="4" fill="#1a2030"/>
+              <circle cx="56" cy="94" r="4" fill="#2a3345"/>
+              <rect x="66" y="91" width="60" height="5" rx="1.5" fill="#2a3345"/>
+            </g>
+          </svg>
+        </div>
+        <div class="body">
+          <div class="keys"><kbd>`</kbd></div>
+          <div class="desc"><b>标签页列表</b>，↑↓ 选择，回车切换</div>
+        </div>
+      </div>
+
+      <!-- 3. Ctrl+` 全局唤起 -->
+      <div class="card">
+        <div class="anim">
+          <svg viewBox="0 0 280 120">
+            <g class="c8-taskbar">
+              <rect x="30" y="102" width="220" height="10" rx="3" fill="#131820" stroke="#2a3345" stroke-width=".8"/>
+              <rect x="38" y="103" width="16" height="8" rx="1.5" fill="#3a4a65"/>
+            </g>
+            <g class="c8-win" opacity="0">
+              <rect x="30" y="20" width="220" height="80" rx="6" fill="#0e121a" stroke="#2a3345" stroke-width="1.2"/>
+              <rect class="hot-bar" x="30" y="20" width="220" height="14" opacity=".25"/>
+              <rect x="46" y="46" width="180" height="6" rx="1.5" fill="#1a2030"/>
+              <rect x="46" y="58" width="140" height="5" rx="1.5" fill="#161b28"/>
+              <rect x="46" y="70" width="160" height="5" rx="1.5" fill="#161b28"/>
+            </g>
+            <g>
+              <rect class="kbd-box" x="105" y="6" width="26" height="18" rx="3"/>
+              <text x="118" y="15" class="kbd-text" font-size="9">Ctrl</text>
+              <rect class="kbd-box" x="137" y="6" width="26" height="18" rx="3"/>
+              <text x="150" y="15" class="kbd-text" font-size="11">`</text>
+            </g>
+          </svg>
+        </div>
+        <div class="body">
+          <div class="keys"><kbd>Ctrl</kbd><span class="plus">+</span><kbd>`</kbd></div>
+          <div class="desc"><b>全局唤起</b>，窗口在后台也能叫出来</div>
+        </div>
+      </div>
+
+      <!-- 4. Alt+← 后退 -->
+      <div class="card">
+        <div class="anim">
+          <svg viewBox="0 0 280 120">
+            <defs>
+              <clipPath id="c3-clip"><rect x="30" y="25" width="220" height="80" rx="5"/></clipPath>
+            </defs>
+            <g clip-path="url(#c3-clip)">
+              <rect class="win-bg" x="30" y="25" width="220" height="80"/>
+              <rect class="win-content" x="30" y="25" width="220" height="80"/>
+              <!-- 旧页面 -->
+              <g class="c3-old">
+                <rect x="45" y="42" width="80" height="8" rx="2" fill="#2a3345"/>
+                <rect x="45" y="58" width="190" height="5" rx="1.5" fill="#1a2030"/>
+                <rect x="45" y="70" width="160" height="5" rx="1.5" fill="#1a2030"/>
+                <rect x="45" y="82" width="120" height="5" rx="1.5" fill="#1a2030"/>
+              </g>
+              <!-- 新页面 -->
+              <g class="c3-new" opacity="0">
+                <rect x="45" y="42" width="60" height="8" rx="2" fill="#4f8cff" opacity=".6"/>
+                <rect x="45" y="58" width="180" height="5" rx="1.5" fill="#1a2030"/>
+                <rect x="45" y="70" width="200" height="5" rx="1.5" fill="#1a2030"/>
+                <rect x="45" y="82" width="140" height="5" rx="1.5" fill="#1a2030"/>
+                <rect x="45" y="94" width="100" height="5" rx="1.5" fill="#1a2030"/>
+              </g>
+            </g>
+            <rect class="win-frame" x="30" y="25" width="220" height="80" rx="5"/>
+            <g class="c3-arrow">
+              <path d="M130 8 L120 18 L130 28" fill="none" stroke="#4f8cff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+              <line x1="120" y1="18" x2="160" y2="18" stroke="#4f8cff" stroke-width="2.2" stroke-linecap="round"/>
+            </g>
+            <g>
+              <rect class="kbd-box" x="90" y="105" width="26" height="12" rx="2"/>
+              <text x="103" y="112" class="kbd-text" font-size="7">Alt</text>
+              <rect class="kbd-box" x="120" y="105" width="16" height="12" rx="2"/>
+              <text x="128" y="112" class="kbd-text" font-size="7">←</text>
+            </g>
+          </svg>
+        </div>
+        <div class="body">
+          <div class="keys"><kbd>Alt</kbd><span class="plus">+</span><kbd>←</kbd></div>
+          <div class="desc"><b>后退</b>。没有前进键</div>
+        </div>
+      </div>
+
+      <!-- 5. F5 刷新 -->
+      <div class="card">
+        <div class="anim">
+          <svg viewBox="0 0 280 120">
+            <defs>
+              <clipPath id="c9-clip"><rect x="30" y="20" width="220" height="85" rx="5"/></clipPath>
+            </defs>
+            <g clip-path="url(#c9-clip)">
+              <rect class="win-bg" x="30" y="20" width="220" height="85"/>
+              <rect class="win-content" x="30" y="20" width="220" height="85"/>
+              <g class="c9-content">
+                <rect x="45" y="36" width="80" height="7" rx="2" fill="#2a3345"/>
+                <rect x="45" y="50" width="180" height="5" rx="1.5" fill="#1a2030"/>
+                <rect x="45" y="62" width="160" height="5" rx="1.5" fill="#1a2030"/>
+                <rect x="45" y="74" width="120" height="5" rx="1.5" fill="#1a2030"/>
+                <rect x="45" y="86" width="150" height="5" rx="1.5" fill="#1a2030"/>
+              </g>
+            </g>
+            <rect class="win-frame" x="30" y="20" width="220" height="85" rx="5"/>
+            <g class="c9-spin" opacity="0">
+              <path d="M130 55 A10 10 0 1 1 120 65" fill="none" stroke="#4f8cff" stroke-width="2.2" stroke-linecap="round"/>
+              <path d="M120 65 L117 59 L123 60 Z" fill="#4f8cff"/>
+            </g>
+            <g>
+              <rect class="kbd-box" x="128" y="106" width="24" height="12" rx="2"/>
+              <text x="140" y="113" class="kbd-text" font-size="8">F5</text>
+            </g>
+          </svg>
+        </div>
+        <div class="body">
+          <div class="keys"><kbd>F5</kbd><span class="word">或</span><kbd>Ctrl</kbd><span class="plus">+</span><kbd>R</kbd></div>
+          <div class="desc"><b>刷新</b>当前页面</div>
+        </div>
+      </div>
+
+      <!-- 6. Ctrl+Shift+I 开发者工具 -->
+      <div class="card">
+        <div class="anim">
+          <svg viewBox="0 0 280 120">
+            <defs>
+              <clipPath id="c10-clip"><rect x="30" y="20" width="220" height="85" rx="5"/></clipPath>
+            </defs>
+            <g clip-path="url(#c10-clip)">
+              <rect class="win-bg" x="30" y="20" width="220" height="85"/>
+              <rect class="win-content" x="30" y="20" width="220" height="85"/>
+              <rect x="45" y="36" width="80" height="7" rx="2" fill="#2a3345"/>
+              <rect x="45" y="50" width="100" height="5" rx="1.5" fill="#1a2030"/>
+              <rect x="45" y="62" width="80" height="5" rx="1.5" fill="#1a2030"/>
+            </g>
+            <g class="c10-devtools" opacity="0">
+              <rect x="160" y="20" width="90" height="85" fill="#0a0d12" stroke="#2a3345" stroke-width="1"/>
+              <rect x="166" y="28" width="40" height="4" rx="1" fill="#4f8cff" opacity=".7"/>
+              <rect x="166" y="38" width="60" height="4" rx="1" fill="#2a3345"/>
+              <rect x="172" y="46" width="50" height="4" rx="1" fill="#3a4a65"/>
+              <rect x="172" y="54" width="40" height="4" rx="1" fill="#3a4a65"/>
+              <rect x="166" y="62" width="55" height="4" rx="1" fill="#2a3345"/>
+              <rect x="172" y="70" width="45" height="4" rx="1" fill="#3a4a65"/>
+              <rect x="166" y="78" width="35" height="4" rx="1" fill="#2a3345"/>
+            </g>
+            <rect class="win-frame" x="30" y="20" width="220" height="85" rx="5"/>
+          </svg>
+        </div>
+        <div class="body">
+          <div class="keys"><kbd>Ctrl</kbd><span class="plus">+</span><kbd>Shift</kbd><span class="plus">+</span><kbd>I</kbd></div>
+          <div class="desc"><b>开发者工具</b></div>
+        </div>
+      </div>
+
+      <!-- 7. 顶部双击最大化 -->
+      <div class="card">
+        <div class="anim">
+          <svg viewBox="0 0 280 120">
+            <g class="c4-win">
+              <rect class="win-bg" x="60" y="40" width="160" height="60" rx="5"/>
+              <rect class="hot-bar" x="60" y="40" width="160" height="14" opacity=".3"/>
+              <rect class="win-content" x="60" y="54" width="160" height="46"/>
+              <rect x="72" y="62" width="80" height="5" rx="1.5" fill="#1a2030"/>
+              <rect x="72" y="72" width="120" height="4" rx="1.5" fill="#161b28"/>
+              <rect x="72" y="82" width="100" height="4" rx="1.5" fill="#161b28"/>
+              <rect class="win-frame" x="60" y="40" width="160" height="60" rx="5"/>
+            </g>
+            <circle class="c4-pulse" cx="140" cy="47" r="0" fill="#4f8cff" opacity="0"/>
+            <circle class="c4-pulse2" cx="140" cy="47" r="0" fill="#4f8cff" opacity="0"/>
+            <g>
+              <rect class="kbd-box" x="105" y="106" width="70" height="12" rx="2"/>
+              <text x="140" y="113" class="kbd-text" font-size="8">双击顶部</text>
+            </g>
+          </svg>
+        </div>
+        <div class="body">
+          <div class="keys"><kbd>顶部双击</kbd></div>
+          <div class="desc"><b>最大化 / 还原</b>窗口</div>
+        </div>
+      </div>
+
+      <!-- 8. 顶部拖动移动 -->
+      <div class="card">
+        <div class="anim">
+          <svg viewBox="0 0 280 120">
+            <g class="c5-win">
+              <rect class="win-bg" x="40" y="40" width="180" height="65" rx="5"/>
+              <rect class="hot-bar" x="40" y="40" width="180" height="14" opacity=".3"/>
+              <rect class="win-content" x="40" y="54" width="180" height="51"/>
+              <rect x="52" y="62" width="80" height="5" rx="1.5" fill="#1a2030"/>
+              <rect x="52" y="72" width="120" height="4" rx="1.5" fill="#161b28"/>
+              <rect x="52" y="82" width="100" height="4" rx="1.5" fill="#161b28"/>
+              <rect class="win-frame" x="40" y="40" width="180" height="65" rx="5"/>
+            </g>
+            <line class="c5-path" x1="140" y1="46" x2="180" y2="60" stroke="#4f8cff" stroke-width="1.4" stroke-dasharray="3 3" opacity="0"/>
+            <g class="c5-mouse" opacity="0">
+              <polygon class="cursor" points="0,0 0,13 3.5,9.5 5.5,14.5 7,14 5,9 9.5,9"/>
+            </g>
+          </svg>
+        </div>
+        <div class="body">
+          <div class="keys"><kbd>顶部拖动</kbd></div>
+          <div class="desc"><b>移动窗口</b>。左右和底边可拉伸大小</div>
+        </div>
+      </div>
+
+      <!-- 9. 顶部中键最小化 -->
+      <div class="card">
+        <div class="anim">
+          <svg viewBox="0 0 280 120">
+            <g class="c6-win">
+              <rect class="win-bg" x="40" y="25" width="200" height="80" rx="5"/>
+              <rect class="hot-bar" x="40" y="25" width="200" height="14" opacity=".3"/>
+              <rect class="win-content" x="40" y="39" width="200" height="66"/>
+              <rect x="52" y="50" width="100" height="6" rx="2" fill="#1a2030"/>
+              <rect x="52" y="62" width="140" height="4" rx="1.5" fill="#161b28"/>
+              <rect x="52" y="72" width="120" height="4" rx="1.5" fill="#161b28"/>
+              <rect class="win-frame" x="40" y="25" width="200" height="80" rx="5"/>
+            </g>
+            <g class="c6-taskbar">
+              <rect x="20" y="110" width="240" height="6" rx="2" fill="#131820" stroke="#2a3345" stroke-width=".6"/>
+            </g>
+            <g>
+              <rect class="kbd-box" x="88" y="6" width="104" height="14" rx="2"/>
+              <text x="140" y="14" class="kbd-text" font-size="8">顶部中键</text>
+            </g>
+          </svg>
+        </div>
+        <div class="body">
+          <div class="keys"><kbd class="warn">顶部中键</kbd></div>
+          <div class="desc"><b>最小化</b>窗口（鼠标滚轮按下去）</div>
+        </div>
+      </div>
+
+      <!-- 10. Shift+中键退出 -->
+      <div class="card danger">
+        <div class="anim">
+          <svg viewBox="0 0 280 120">
+            <g class="c7-win">
+              <rect class="win-bg" x="40" y="20" width="200" height="85" rx="5"/>
+              <rect class="hot-bar" x="40" y="20" width="200" height="14" opacity=".3"/>
+              <rect class="win-content" x="40" y="34" width="200" height="71"/>
+              <rect x="52" y="45" width="100" height="6" rx="2" fill="#1a2030"/>
+              <rect x="52" y="57" width="140" height="4" rx="1.5" fill="#161b28"/>
+              <rect x="52" y="67" width="120" height="4" rx="1.5" fill="#161b28"/>
+              <rect class="win-frame" x="40" y="20" width="200" height="85" rx="5"/>
+            </g>
+            <g class="c7-x" opacity="0" style="transform-origin:140px 62px">
+              <circle cx="140" cy="62" r="18" fill="#1a0f0a" stroke="#fbbf24" stroke-width="1.4"/>
+              <line x1="133" y1="55" x2="147" y2="69" stroke="#fbbf24" stroke-width="2" stroke-linecap="round"/>
+              <line x1="147" y1="55" x2="133" y2="69" stroke="#fbbf24" stroke-width="2" stroke-linecap="round"/>
+            </g>
+            <g>
+              <rect class="kbd-box" x="60" y="108" width="44" height="12" rx="2"/>
+              <text x="82" y="115" class="kbd-text" font-size="7">Shift</text>
+              <rect class="kbd-box" x="108" y="108" width="70" height="12" rx="2"/>
+              <text x="143" y="115" class="kbd-text" font-size="7">中键</text>
+            </g>
+          </svg>
+        </div>
+        <div class="body">
+          <div class="keys"><kbd class="warn">Shift</kbd><span class="plus">+</span><kbd class="warn">顶部中键</kbd></div>
+          <div class="desc"><b>退出程序</b>。找不到关闭按钮时用这个</div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ============ 搜索框内操作 ============ -->
+  <section>
+    <h2><span class="num">3</span>搜索框打开之后</h2>
+    <p class="sub">这些都是键盘操作，不用碰鼠标。</p>
+
+    <div class="steps">
+      <div class="step"><div class="body">
+        继续打字就是继续改搜索词，结果实时预览 —— <b>匹配项会立即加载成预览标签</b>，不满意直接删字符换一个。
+      </div></div>
+      <div class="step"><div class="body">
+        <kbd>Enter</kbd> <b>打开匹配项</b>；没有任何匹配时，用搜索引擎搜你的输入。
+      </div></div>
+      <div class="step"><div class="body">
+        <kbd>Esc</kbd> <b>取消</b>，回到打开搜索框之前的那个页面。
+      </div></div>
+      <div class="step"><div class="body">
+        标签列表模式下，<kbd>↑</kbd> <kbd>↓</kbd> 移动选择，<kbd>Enter</kbd> 切换，继续打字可过滤，再按一次 <kbd>`</kbd> 关掉。
+      </div></div>
+    </div>
+  </section>
+
+  <!-- ============ 取舍 ============ -->
+  <section>
+    <h2><span class="num">4</span>你可能会注意到的几件事</h2>
+    <p class="sub">这些是设计取舍，不是 bug。</p>
+
+    <div class="notes">
+      <div class="note">
+        <span class="mark">·</span>
+        <div><b>网页顶部 46 像素里的输入框用不了。</b>那块区域归浏览器管，按键会被截走。本页面所有内容都放在 46 像素以下 —— 其他网站不会这么做，遇到顶栏搜索框时，把搜索放到顶部通道里完成更快。</div>
+      </div>
+      <div class="note">
+        <span class="mark">·</span>
+        <div><b>没有前进按钮。</b>后退之后想再回去，用顶部通道重新打开那个页面。</div>
+      </div>
+      <div class="note">
+        <span class="mark">·</span>
+        <div><b>网页弹出的新窗口会变成标签页。</b>大部分网站没问题，但部分第三方登录（扫码、OAuth）可能会卡住。</div>
+      </div>
+      <div class="note">
+        <span class="mark">·</span>
+        <div><b>没有下载管理器。</b>点击下载链接后，文件去哪了目前没有提示。</div>
+      </div>
+      <div class="note">
+        <span class="mark">·</span>
+        <div><b>标签页有数量上限。</b>超过限制时最旧的会被静默关闭，也不提供「恢复已关闭标签」。</div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <span>按 <kbd>Ctrl</kbd> + <kbd>`</kbd> 随时叫出搜索框</span>
+    <span>演示页 · 部署于 Cloudflare Pages</span>
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  var bar = document.getElementById('hotbar');
+  if (!bar) return;
+  function setHot(v) { v ? bar.classList.add('hot') : bar.classList.remove('hot'); }
+  document.addEventListener('mousemove', function (e) { setHot(e.clientY < 46); }, { passive: true });
+  document.addEventListener('mouseleave', function () { setHot(false); });
+  window.addEventListener('blur', function () { setHot(false); });
+})();
+</script>
+
+</body>
+</html>
